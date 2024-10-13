@@ -1,2 +1,3 @@
 # StudyOnline
-Le but de ce projet est de d´evelopper une plateforme ´educative interactive avec des fonction- nalit´es basiques `a l’aide de Redis, une base de donn´ees en m´emoire, et Django, un framework de d´eveloppement web en Python.
+
+Le but de ce projet est de développer une plateforme éducative interactive avec des fonctionnalités basiques à l’aide de Redis, une base de données en mémoire, et Django, un framework de développement web en Python.

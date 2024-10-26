@@ -1,0 +1,4 @@
+django
+redis
+django-redis
+django-debug-toolbar

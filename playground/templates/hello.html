@@ -1,12 +1,27 @@
 <!DOCTYPE html>
 
+{% load static %}
+
 <html lang="fr">
     <head>
         <meta charset="UTF-8">
-        <title>Hello</title>
+        <title>Study online</title>
+        <link rel="stylesheet" href="{% static 'css/style.css' %}">
     </head>
 
     <body>
-        <h1>Hello {{ name }}</h1>
+        {% if name %}
+            <h1>Hello {{ name }}!</h1>
+        {% else %}
+            <h1>Hello World!</h1>
+        {% endif %}
+
+        <h2>Liste des cours</h2>
+
+        <p>
+            {% for course in courses %}
+                <a href="{{ course.url }}">{{ course.name }}</a><br>
+            {% endfor %}
+        </p>
     </body>
 </html>

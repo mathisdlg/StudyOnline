@@ -1,7 +1,12 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from django.shortcuts import render
 
 # Create your views here.
 def say_hello(request):
-    return render(request, 'hello.html', {"name": "giga chad"})
+    courses = [
+        {
+            "name": "Python",
+            "url": "https://www.edx.org/learn/python"
+        }
+    ]
+    return render(request, 'hello.html', {"name": "giga chad", "courses": courses})

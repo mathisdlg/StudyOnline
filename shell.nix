@@ -2,12 +2,8 @@
 pkgs.mkShellNoCC {
     packages = with pkgs;[
         redis
-        (python3.withPackages (python-pkgs: with python-pkgs; [
-            redis
-            django
-            django-redis
-            django-debug-toolbar
-        ]))
+        python3
+        python3Packages.pip
     ];
 
     LANG = "";
@@ -19,6 +15,9 @@ pkgs.mkShellNoCC {
     LC_TIME = "C";
 
     shellHook = ''
+        python -m venv .venv
+        source .venv/bin/activate
+        pip install -r requirements.txt
         python manage.py runserver &
     '';
 }

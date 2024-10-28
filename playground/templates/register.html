@@ -14,9 +14,13 @@
                 <label for="password">Password</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
+            <div class="form-group p-3" id="divConfPass">
+                <label for="passwordConf">Confirm password </label>
+                <input type="password" class="form-control" id="passwordConf" name="passwordConf" required>
+            </div>
             <div class="d-grid gap-2 col-6 mx-auto">
-                <input id="submit" class="btn btn-primary pt-2" type="submit" value="Login">
-                <a href="{% url 'register' %}" class="btn btn-secondary m-2">Register</a>
+                <input id="submit" class="btn btn-primary pt-2" type="submit" value="Register">
+                <a href="{% url 'login' %}" class="btn btn-secondary m-2">Login</a>
             </div>
         </form>
     </div>

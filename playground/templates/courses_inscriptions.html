@@ -1,0 +1,17 @@
+{% extends 'components/base.html' %}
+
+{% block content %}
+    <div class="container">
+        <h1>Courses inscriptions</h1>
+        <p>Here are the courses you can subscribe to:</p>
+        <ul>
+            {% for course in courses %}
+                <li>
+                    <a href="{% url 'courses_inscriptions' course.id %}">
+                        {{ course.name }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

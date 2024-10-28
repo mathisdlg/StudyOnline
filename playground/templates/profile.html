@@ -1,0 +1,12 @@
+{% expends 'components/base.html' %}
+
+{% block content %}
+    <div class="container">
+        <h1>Profil</h1>
+        <p>Here is your profil:</p>
+        <ul>
+            <li>{{ user.username }}</li>
+            <li>{{ user.email }}</li>
+        </ul>
+    </div>
+{% endblock %}

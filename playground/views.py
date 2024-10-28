@@ -44,9 +44,6 @@ def logout(request):
 
 def courses_inscriptions(request, course_id: int):
     if request.user.is_authenticated:
-        print(request.user)
-        print("test")
         return render(request, 'courses_inscriptions.html')
     else:
-        print("test2")
         return render(request, 'login.html')

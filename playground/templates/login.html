@@ -5,7 +5,20 @@
         <h1>Login</h1>
         <p>Please enter your credentials to have full access</p>
 
-        <form method="post" action="rdfvghbjnk/">
+        {% if error %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        {% if success %}
+            <div class="alert alert-success" role="alert">
+                {{ success }}
+            </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
             <div class="form-group p-3">
                 <label for="username">Username</label>
                 <input type="text" class="form-control" id="username" name="username" required>

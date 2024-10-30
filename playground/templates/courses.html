@@ -31,12 +31,11 @@
                             <h4>{{ course.name }}</h4>
                             <p>{{ course.description }}</p>
                             <p>Level: {{ course.level }}</p>
-                            <p>Places: {{ course.remaining_places }}/{{ course.places }}</p>
+                            <p>Remaining places: {{ course.remaining_places }}/{{ course.places }}</p>
                         </div>
                         <div>
                             <a href="{% url 'courses_inscriptions' course.name %}" class="btn btn-primary">Inscriptions</a>
                         </div>
-
                     </div>
                 </li>
             {% endfor %}

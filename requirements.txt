@@ -1,4 +1,5 @@
 django
 redis
+django-redis
 django-debug-toolbar
 django-bootstrap-v5

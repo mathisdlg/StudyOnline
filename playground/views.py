@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_protect
-import redis
+from django_redis import get_redis_connection
 import hashlib
 
 USER_BD = 0
@@ -38,7 +38,7 @@ def courses(request):
 @csrf_protect
 def login(request):
     if request.method == 'POST':
-        r = redis.Redis(host='localhost', port=6379, db=0)
+        r = get_redis_connection("default")
         user = r.get(request.POST['username'])
         if user is not None:
             if user.decode() == hashlib.sha256(request.POST['password'].encode()).hexdigest():
@@ -52,13 +52,13 @@ def login(request):
 @csrf_protect
 def register(request):
     if request.method == 'POST':
-        r = redis.Redis(host='localhost', port=6379, db=0)
-        username = r.get(request.POST['username'])
-        password = r.get(request.POST['password'])
-        password_conf = r.get(request.POST['passwordConf'])
-        account_type = r.get(request.POST['accountType'])
+        r = get_redis_connection("default")
+        username = request.POST['username']
+        password = request.POST['password']
+        password_conf = request.POST['passwordConf']
+        account_type = request.POST['accountType']
         if (password == password_conf and username != '') and (password != '' and r.get(username) is None):
-            r.set(username, {'role': account_type, 'password': hashlib.sha256(password.encode()).hexdigest()})
+            r.set(username, hashlib.sha256(password.encode()).hexdigest())
             return render(request, 'login.html', {"success": "User created successfully, you can now login", "user": username})
         else:
             return render(request, 'register.html', {"error": "Invalid credentials"})

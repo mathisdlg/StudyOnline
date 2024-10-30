@@ -5,5 +5,11 @@
     <div class="container">
         <h1>Welcome to Study Online</h1>
         <p>Study Online is a platform that allows you to learn online.</p>
+
+        {% if success %}
+            <div class="alert alert-success" role="alert">
+                {{ success }}
+            </div>
+        {% endif %}
     </div>
 {% endblock %}

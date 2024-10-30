@@ -163,3 +163,4 @@ cython_debug/
 
 # Redis
 dump.rdb
+Test/commands.py

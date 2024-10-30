@@ -6,16 +6,22 @@
         <h1>Welcome to Study Online</h1>
         <p>Study Online is a platform that allows you to learn online.</p>
 
-        {% if error %}
-            <div class="alert alert-danger" role="alert">
-                {{ error }}
-            </div>
-        {% endif %}
-
-        {% if success %}
-            <div class="alert alert-success" role="alert">
-                {{ success }}
-            </div>
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ message }}
+                    </div>
+                {% elif message.tags == 'success' %}
+                    <div class="alert alert-success" role="alert">
+                        {{ message }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        {{ message }}
+                    </div>
+                {% endif %}
+            {% endfor %}
         {% endif %}
     </div>
 {% endblock %}

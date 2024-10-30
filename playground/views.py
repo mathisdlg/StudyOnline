@@ -6,16 +6,20 @@ from django.contrib import messages
 import hashlib
 import uuid
 
+
+
 def is_authenticated(cookies):
     r = get_redis_connection("default")
-    if cookies.get("user_token") is not None:
+    if cookies.get("user_token") is not None and r.get(f"user_token:{cookies.get('username')}") is not None:
         return (cookies.get("user_token") == r.get(f"user_token:{cookies.get('username')}").decode())
+    return False
 
 
 def set_cookie(response, user_token, user):
     response.set_cookie("user_token", user_token)
     response.set_cookie("username", user[b"username"].decode())
     return response
+
 
 def delete_cookie(request, response):
     r = get_redis_connection("default")
@@ -27,10 +31,6 @@ def delete_cookie(request, response):
 
 def home(request): # Check courses by category like prog, web dev, etc...
     return render(request, 'home.html')
-
-
-def courses(request):
-    return render(request, 'courses.html', {"courses": courses})
 
 
 @csrf_protect
@@ -62,6 +62,10 @@ def login(request):
 
 @csrf_protect
 def register(request):
+    if is_authenticated(request.COOKIES):
+        messages.add_message(request, messages.SUCCESS, "You are already logged in")
+        return redirect(reverse('home'))
+
     if request.method == 'POST':
         r = get_redis_connection("default")
         user = {
@@ -74,10 +78,11 @@ def register(request):
             r.hset(f"user:{user['username']}", mapping=user)
             
             user_token = uuid.uuid4()
-            r.set(f"user_token:{user['username']}", user_token)
+            r.set(f"user_token:{user['username']}", str(user_token))
 
+            user = r.hgetall(f"user:{user['username']}")
             response = redirect(reverse('home'))
-            response = set_cookie(response, user_token, user)
+            response = set_cookie(response, str(user_token), user)
             messages.add_message(request, messages.SUCCESS, "User created successfully")
             return response
         else:
@@ -91,18 +96,87 @@ def profile(request):
 
 
 def logout(request):
+    response = redirect(reverse('home'))
+    response = delete_cookie(request, response)
     if is_authenticated(request.COOKIES):
-        response = redirect(reverse('home'))
-        response = delete_cookie(request, response)
         messages.add_message(request, messages.SUCCESS, "You are logged out")
-        return response
-    messages.add_message(request, messages.ERROR, "You are not logged in")
-    return redirect(reverse('home'))
-
-
-def courses_inscriptions(request, course_id: int):
-    if request.user.is_authenticated:
-        return render(request, 'courses_inscriptions.html')
     else:
         messages.add_message(request, messages.ERROR, "You are not logged in")
-        return redirect(reverse('login'))
+    return response
+
+
+def create_course(request):
+    r = get_redis_connection("default")
+    cookies = request.COOKIES
+    if r.hgetall(f"user:{cookies.get('username')}")[b"account_type"].decode() == "Prof" and is_authenticated(cookies):
+        if request.method == 'POST':
+            students_list_uuid = str(uuid.uuid4())
+            course = {
+                "name": request.POST['name'],
+                "description": request.POST['description'],
+                "level": request.POST['level'],
+                "places": request.POST['places'],
+                "professor": cookies.get('username'),
+                "students": students_list_uuid,
+            }
+            if r.hgetall(f"course:{course['name']}") != {}:
+                messages.add_message(request, messages.ERROR, "Course already exists")
+                return render(request, 'create_course.html')
+            
+            r.hset(f"course:{course['name']}", mapping=course)
+
+            messages.add_message(request, messages.SUCCESS, "Course created successfully")
+            return redirect('courses')
+
+        return render(request, 'create_course.html')
+    else:
+        messages.add_message(request, messages.ERROR, "You are not logged in has a professor")
+        return redirect(reverse('home'))
+
+
+def courses(request):
+    r = get_redis_connection("default")
+    courses = []
+    for key in r.scan_iter(match="course:*"):
+        course = r.hgetall(key)
+        course["name"] = course[b"name"].decode()
+        course["description"] = course[b"description"].decode()
+        course["level"] = course[b"level"].decode()
+        course["professor"] = course[b"professor"].decode()
+        course["places"] = course[b"places"].decode()
+        course["students"] = [student.decode() for student in r.lrange(f"registered_student:{course[b'students'].decode()}", 0, -1)]
+        course["remaining_places"] = int(course["places"]) - len(course["students"])
+        courses.append(course)
+    return render(request, 'courses.html', {"courses": courses})
+
+
+@csrf_protect
+def courses_inscriptions(request, course_id):
+    r = get_redis_connection("default")
+    if r.hgetall(f"course:{course_id}") != {}:
+        if is_authenticated(request.COOKIES):
+            course = r.hgetall(f"course:{course_id}")
+            course["name"] = course[b"name"].decode()
+            course["description"] = course[b"description"].decode()
+            course["level"] = course[b"level"].decode()
+            course["professor"] = course[b"professor"].decode()
+            course["places"] = course[b"places"].decode()
+            course["students"] = [student.decode() for student in r.lrange(f"registered_student:{course[b'students'].decode()}", 0, -1)]
+            course["remaining_places"] = int(course["places"]) - len(course["students"])
+
+            if request.method == 'POST':
+                if course["remaining_places"] > 0:
+                    r.lpush(f"registered_student:{ r.hget(f'course:{course_id}', 'students').decode()}", request.COOKIES.get('username'))
+                    messages.add_message(request, messages.SUCCESS, "You are registered in the course")
+                else:
+                    messages.add_message(request, messages.ERROR, "There are no places left in the course")
+                
+                return redirect(reverse('courses_inscriptions', args=[course_id]))
+            
+            return render(request, 'courses_inscriptions.html', {"course": course})
+        else:
+            messages.add_message(request, messages.ERROR, "You are not logged in")
+            return redirect(reverse('login'))
+    else:
+        messages.add_message(request, messages.ERROR, "Course does not exist")
+        return redirect('courses')

@@ -2,16 +2,49 @@
 
 {% block content %}
     <div class="container">
-        <h1>Courses inscriptions</h1>
-        <p>Here are the courses you can subscribe to:</p>
-        <ul>
-            {% for course in courses %}
-                <li>
-                    <a href="{% url 'courses_inscriptions' course.id %}">
-                        {{ course.name }}
-                    </a>
+        <h1>Course inscriptions</h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ message }}
+                    </div>
+                {% elif message.tags == 'success' %}
+                    <div class="alert alert-success" role="alert">
+                        {{ message }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        {{ message }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        <p>Here are the inscriptions for the course {{ course.name }}</p>
+        <p>Description: {{ course.description }}</p>
+        <p>Level: {{ course.level}}</p>
+        <p>Places: {{ course.remaining_places }}/{{ course.places }}</p>
+        <p>Professor: {{ course.professor }}</p>
+        <p>Already registred students:</p>
+        <ul class="list-group">
+            {% for student in course.students %}
+                <li class="list-group-item">
+                    {{ student }}
                 </li>
             {% endfor %}
+            {% if course.remaining_places > 0 %}
+                <li class="list-group-item">
+                    <div class="form-group">
+                        <form method="POST" action="{% url 'courses_inscriptions' course.name %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="register" value=1>
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </form>
+                    </div>
+                </li>
+            {% endif %}
         </ul>
     </div>
 {% endblock %}

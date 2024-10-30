@@ -6,6 +6,12 @@
         <h1>Welcome to Study Online</h1>
         <p>Study Online is a platform that allows you to learn online.</p>
 
+        {% if error %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+        {% endif %}
+
         {% if success %}
             <div class="alert alert-success" role="alert">
                 {{ success }}

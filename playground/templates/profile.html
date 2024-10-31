@@ -2,10 +2,36 @@
 
 {% block content %}
     <div class="container">
-        <h1>Profil</h1>
-        <p>Here is your profil:</p>
-        <ul>
-            <li>{{ user.username }}</li>
-        </ul>
+        <h1>Profile</h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ message }}
+                    </div>
+                {% elif message.tags == 'success' %}
+                    <div class="alert alert-success" role="alert">
+                        {{ message }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        {{ message }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        <div class="d-flex justify-content-between">
+            <div>
+                <p>Name: {{ user.username }}</p>
+                <p>Account type: {{ user.account_type }}</p>
+            </div>
+            <div class="d-flex flex-column">
+                <a class="btn btn-primary m-1" href="{% url 'update_profile' %}">Modify your informations</a>
+                
+                <a class="btn btn-danger m-1" href="{% url 'logout' %}">Logout</a>
+            </div>
+        </div>
     </div>
 {% endblock %}

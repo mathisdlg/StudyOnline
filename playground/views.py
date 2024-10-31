@@ -7,6 +7,9 @@ import hashlib
 import uuid
 
 
+ACCOUNT_TYPE = ["Prof", "Student"]
+
+
 
 def is_authenticated(cookies):
     r = get_redis_connection("default")
@@ -75,7 +78,7 @@ def register(request):
         user = {
             "username": request.POST['username'],
             "password": hashlib.sha512(request.POST['password'].encode()).hexdigest(),
-            "account_type": request.POST['accountType']
+            "account_type": request.POST['accountType'] if request.POST['accountType'] in ACCOUNT_TYPE else "Student",
         }
         password_conf = request.POST['passwordConf']
         if (user["password"] == hashlib.sha512(password_conf.encode()).hexdigest() and user["username"] != '') and (user["password"] != '' and r.get(user["username"]) is None):
@@ -96,7 +99,54 @@ def register(request):
 
 
 def profile(request):
-    return render(request, 'profile.html')
+    if not is_authenticated(request.COOKIES):
+        messages.add_message(request, messages.ERROR, "You are not logged in")
+        return redirect(reverse('login'))
+    r = get_redis_connection("default")
+    user = r.hgetall(f"user:{request.COOKIES.get('username')}")
+    user["username"] = user[b"username"].decode()
+    user["account_type"] = user[b"account_type"].decode()
+    
+    return render(request, 'profile.html', {"user": user})
+
+
+def update_profile(request):
+    if not is_authenticated(request.COOKIES):
+        messages.add_message(request, messages.ERROR, "You are not logged in")
+        return redirect(reverse('login'))
+
+    r = get_redis_connection("default")
+    user = r.hgetall(f"user:{request.COOKIES.get('username')}")
+    user["username"] = user[b"username"].decode()
+    user["account_type"] = user[b"account_type"].decode()
+    
+    if request.method == 'POST':
+        new_username = request.POST['username']
+        if new_username == user["username"]:
+            ...
+        elif new_username != '' and r.hgetall(f"user:{new_username}") == {}:
+            user["username"] = request.POST['username']
+        else:
+            messages.add_message(request, messages.ERROR, "Invalid/Already used username")
+            return render(request, 'update_profile.html', {"user": user})
+
+        if request.POST['account_type'] in ACCOUNT_TYPE:
+            user["account_type"] = request.POST['account_type']
+        else:
+            messages.add_message(request, messages.ERROR, "Invalid account type")
+            return render(request, 'update_profile.html', {"user": user})
+
+        password = hashlib.sha512(request.POST['password'].encode()).hexdigest()
+        if user[b"password"].decode() == password:
+            r.delete(f"user:{user['username']}")
+            r.hset(f"user:{user['username']}", mapping=user)
+            messages.add_message(request, messages.SUCCESS, "User updated successfully")
+            return redirect(reverse('profile'))
+        else:
+            messages.add_message(request, messages.ERROR, "Invalid password")
+            return render(request, 'update_profile.html', {"user": user})
+    
+    return render(request, 'update_profile.html', {"user": user})
 
 
 def logout(request):

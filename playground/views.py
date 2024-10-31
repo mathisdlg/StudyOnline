@@ -10,8 +10,11 @@ import uuid
 
 def is_authenticated(cookies):
     r = get_redis_connection("default")
-    if cookies.get("user_token") is not None and r.get(f"user_token:{cookies.get('username')}") is not None:
-        return (cookies.get("user_token") == r.get(f"user_token:{cookies.get('username')}").decode())
+    token = r.get(f"user_token:{cookies.get('username')}").decode()
+    cookies_token = cookies.get("user_token")
+    cookies_username = cookies.get("username")
+    if (cookies_token is not None and token is not None) and (cookies_username is not None):
+        return (cookies_token == token)
     return False
 
 
@@ -97,11 +100,11 @@ def profile(request):
 
 def logout(request):
     response = redirect(reverse('home'))
-    response = delete_cookie(request, response)
     if is_authenticated(request.COOKIES):
         messages.add_message(request, messages.SUCCESS, "You are logged out")
     else:
         messages.add_message(request, messages.ERROR, "You are not logged in")
+    response = delete_cookie(request, response)
     return response
 
 

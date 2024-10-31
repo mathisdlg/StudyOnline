@@ -106,6 +106,39 @@ def profile(request):
     user = r.hgetall(f"user:{request.COOKIES.get('username')}")
     user["username"] = user[b"username"].decode()
     user["account_type"] = user[b"account_type"].decode()
+
+    courses_registred = []
+    if user["account_type"] == "Prof":
+        courses = []
+        for key in r.scan_iter(match="course:*"):
+            course = r.hgetall(key)
+            course["name"] = course[b"name"].decode()
+            course["description"] = course[b"description"].decode()
+            course["level"] = course[b"level"].decode()
+            course["professor"] = course[b"professor"].decode()
+            course["places"] = course[b"places"].decode()
+            course["students"] = [student.decode() for student in r.lrange(f"registered_student:{course[b'students'].decode()}", 0, -1)]
+            course["remaining_places"] = int(course["places"]) - len(course["students"])
+            if request.COOKIES.get('username') == course["professor"]:
+                courses.append(course)
+            if request.COOKIES.get('username') in course["students"]:
+                courses_registred.append(course)
+        user["courses"] = courses
+    else:
+        courses = []
+        for key in r.scan_iter(match="course:*"):
+            course = r.hgetall(key)
+            course["name"] = course[b"name"].decode()
+            course["description"] = course[b"description"].decode()
+            course["level"] = course[b"level"].decode()
+            course["professor"] = course[b"professor"].decode()
+            course["places"] = course[b"places"].decode()
+            course["students"] = [student.decode() for student in r.lrange(f"registered_student:{course[b'students'].decode()}", 0, -1)]
+            course["remaining_places"] = int(course["places"]) - len(course["students"])
+            if request.COOKIES.get('username') in course["students"]:
+                courses_registred.append(course)
+    user["courses_registred"] = courses_registred
+    print(user)
     
     return render(request, 'profile.html', {"user": user})
 
@@ -239,3 +272,26 @@ def courses_inscriptions(request, course_id):
     else:
         messages.add_message(request, messages.ERROR, "Course does not exist")
         return redirect('courses')
+
+
+def courses_unregister(request, course_id):
+    if not is_authenticated(request.COOKIES):
+        messages.add_message(request, messages.ERROR, "You are not logged in")
+        return redirect(reverse('login'))
+    
+    r = get_redis_connection("default")
+    course = r.hgetall(f"course:{course_id}")
+    course["name"] = course[b"name"].decode()
+    course["description"] = course[b"description"].decode()
+    course["level"] = course[b"level"].decode()
+    course["professor"] = course[b"professor"].decode()
+    course["places"] = course[b"places"].decode()
+    course["students"] = [student.decode() for student in r.lrange(f"registered_student:{course[b'students'].decode()}", 0, -1)]
+    course["remaining_places"] = int(course["places"]) - len(course["students"])
+
+    if request.COOKIES.get('username') in course["students"]:
+        r.lrem(f"registered_student:{course[b'students'].decode()}", 0, request.COOKIES.get('username'))
+        messages.add_message(request, messages.SUCCESS, "You are unregistered in the course")
+    else:
+        messages.add_message(request, messages.INFO, "You are not registered in the course")
+    return redirect(reverse('profile'))

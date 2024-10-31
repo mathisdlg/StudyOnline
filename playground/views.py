@@ -138,7 +138,6 @@ def profile(request):
             if request.COOKIES.get('username') in course["students"]:
                 courses_registred.append(course)
     user["courses_registred"] = courses_registred
-    print(user)
     
     return render(request, 'profile.html', {"user": user})
 

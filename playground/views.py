@@ -10,11 +10,12 @@ import uuid
 
 def is_authenticated(cookies):
     r = get_redis_connection("default")
-    token = r.get(f"user_token:{cookies.get('username')}").decode()
     cookies_token = cookies.get("user_token")
     cookies_username = cookies.get("username")
-    if (cookies_token is not None and token is not None) and (cookies_username is not None):
-        return (cookies_token == token)
+    if cookies_username is not None and cookies_token is not None:
+        token = r.get(f"user_token:{cookies_username}").decode()
+        if token is not None:
+            return (cookies_token == token)
     return False
 
 
@@ -32,7 +33,7 @@ def delete_cookie(request, response):
     return response
 
 
-def home(request): # Check courses by category like prog, web dev, etc...
+def home(request):
     return render(request, 'home.html')
 
 
@@ -168,7 +169,12 @@ def courses_inscriptions(request, course_id):
             course["remaining_places"] = int(course["places"]) - len(course["students"])
 
             if request.method == 'POST':
-                if course["remaining_places"] > 0:
+                username = request.COOKIES.get('username')
+                if username in course["students"]:
+                    messages.add_message(request, messages.INFO, "You are already registered in the course")
+                elif course["professor"] == username:
+                    messages.add_message(request, messages.ERROR, "You are the professor of the course")
+                elif course["remaining_places"] > 0:
                     r.lpush(f"registered_student:{ r.hget(f'course:{course_id}', 'students').decode()}", request.COOKIES.get('username'))
                     messages.add_message(request, messages.SUCCESS, "You are registered in the course")
                 else:

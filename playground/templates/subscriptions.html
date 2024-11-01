@@ -1,0 +1,39 @@
+{% extends 'components/base.html' %}
+
+{% block content %}
+    <div class="container">
+        <h1>
+            Subscriptions
+        </h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ message }}
+                    </div>
+                {% elif message.tags == 'success' %}
+                    <div class="alert alert-success" role="alert">
+                        {{ message }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        {{ message }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        <div class="d-flex justify-content-between">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group my-4">
+                    <label for="sub_word">Course</label>
+                    <input type="text" class="form-control" id="sub_word" name="sub_word">
+                </div>
+                <button type="submit" class="btn btn-primary">Subscribe</button>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

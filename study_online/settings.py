@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'playground',
     'debug_toolbar',
     'bootstrap5',
+    'django_bootstrap_icons',
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,66 @@
+{% extends 'components/base.html' %}
+
+{% block content %}
+    <div class="container">
+        <h1>Search result</h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ message }}
+                    </div>
+                {% elif message.tags == 'success' %}
+                    <div class="alert alert-success" role="alert">
+                        {{ message }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        {{ message }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        <div class="d-flex justify-content-between">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group my-4">
+                    <label for="search_query">Search</label>
+                    <input type="text" class="form-control" id="search_query" name="search_query" value="{{ search }}">
+
+                    <button type="submit" class="btn btn-primary mt-3">Search</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="mt-3">
+            <p class="my-4">
+                Courses that match your search:
+            </p>
+            <ul class="list-group">
+                {% for course in courses %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ course.name }}</h4>
+                                <p>{{ course.description }}</p>
+                                <p>Level: {{ course.level }}</p>
+                                <p>professor: {{ course.professor }}</p>
+                                <p>Remaining places: {{ course.remaining_places }}/{{ course.places }}</p>
+                            </div>
+                            <div>
+                                <a href="{% url 'courses_inscriptions' course.name %}" class="btn btn-primary">Inscriptions</a>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+                {% if courses|length == 0 %}
+                    <p class="my-4">
+                        No courses found
+                    </p>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}

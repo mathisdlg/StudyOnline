@@ -7,6 +7,7 @@ import hashlib
 import uuid
 
 
+
 ACCOUNT_TYPE = ["Prof", "Student"]
 
 
@@ -210,6 +211,7 @@ def create_course(request):
                 return render(request, 'create_course.html')
             
             r.hset(f"course:{course['name']}", mapping=course)
+            r.expire(f"course:{course['name']}", 3600)
 
             messages.add_message(request, messages.SUCCESS, "Course created successfully")
             return redirect('courses')
@@ -241,6 +243,7 @@ def courses_inscriptions(request, course_id):
     r = get_redis_connection("default")
     if r.hgetall(f"course:{course_id}") != {}:
         if is_authenticated(request.COOKIES):
+            r.expire(f"course:{course_id}", 3600)
             course = r.hgetall(f"course:{course_id}")
             course["name"] = course[b"name"].decode()
             course["description"] = course[b"description"].decode()
@@ -280,6 +283,11 @@ def courses_unregister(request, course_id):
     
     r = get_redis_connection("default")
     course = r.hgetall(f"course:{course_id}")
+    if course == {}:
+        messages.add_message(request, messages.ERROR, "Course does not exist")
+        return redirect(reverse('profile'))
+
+    r.expire(f"course:{course_id}", 3600)
     course["name"] = course[b"name"].decode()
     course["description"] = course[b"description"].decode()
     course["level"] = course[b"level"].decode()
@@ -294,3 +302,106 @@ def courses_unregister(request, course_id):
     else:
         messages.add_message(request, messages.INFO, "You are not registered in the course")
     return redirect(reverse('profile'))
+
+
+def update_course(request, course_id):
+    if not is_authenticated(request.COOKIES):
+        messages.add_message(request, messages.ERROR, "You are not logged in")
+        return redirect(reverse('login'))
+    
+    r = get_redis_connection("default")
+    prof = r.hget(f"course:{course_id}", "professor")
+
+    if prof == None:
+        messages.add_message(request, messages.ERROR, "Course does not exist")
+    else:
+        r.expire(f"course:{course_id}", 3600)
+        prof = prof.decode()
+        if request.COOKIES.get('username') == prof:
+            course = r.hgetall(f"course:{course_id}")
+            course["name"] = course[b"name"].decode()
+            course["description"] = course[b"description"].decode()
+            course["level"] = course[b"level"].decode()
+            course["professor"] = course[b"professor"].decode()
+            course["places"] = course[b"places"].decode()
+            course["students"] = course[b"students"].decode()
+
+            if request.method == 'POST':
+                new_course = {
+                    "name": request.POST['name'],
+                    "description": request.POST['description'],
+                    "level": request.POST['level'],
+                    "places": request.POST['places'],
+                    "professor": prof,
+                    "students": course["students"],
+                }
+
+                if new_course["name"] != course["name"]:
+                    if r.hgetall(f"course:{new_course['name']}") != {}:
+                        messages.add_message(request, messages.ERROR, "Course name already exists")
+                        return render(request, 'update_course.html', {"course": course})
+                    r.delete(f"course:{course_id}")
+                    course_id = new_course["name"]
+
+                r.hset(f"course:{course_id}", mapping=course)
+                messages.add_message(request, messages.SUCCESS, "Course updated successfully")
+                return redirect(reverse('profile'))
+
+            return render(request, 'update_course.html', {"course": r.hgetall(f"course:{course_id}")})
+        else:
+            messages.add_message(request, messages.ERROR, "You are not the professor of the course")
+    return redirect(reverse('profile'))
+
+
+def delete_course(request, course_id):
+    if not is_authenticated(request.COOKIES):
+        messages.add_message(request, messages.ERROR, "You are not logged in")
+        return redirect(reverse('login'))
+    
+    r = get_redis_connection("default")
+    prof = r.hget(f"course:{course_id}", "professor")
+    if prof == None:
+        messages.add_message(request, messages.ERROR, "Course does not exist")
+    else:
+        prof = prof.decode()
+        registred_student_list_uuid = r.hget(f"course:{course_id}", "students").decode()
+
+        if request.COOKIES.get('username') == prof:
+            r.delete(f"course:{course_id}")
+            r.delete(f"registered_student:{registred_student_list_uuid}")
+            messages.add_message(request, messages.SUCCESS, "Course deleted successfully")
+        else:
+            messages.add_message(request, messages.ERROR, "You are not the professor of the course")
+    return redirect(reverse('profile'))
+
+
+def subscriptions(request):
+    if not is_authenticated(request.COOKIES):
+        messages.add_message(request, messages.ERROR, "You are not logged in")
+        return redirect(reverse('login'))
+    
+    if request.method == 'POST':
+        ...
+
+    return render(request, 'subscriptions.html')
+
+
+@csrf_protect
+def search_page(request):
+    r = get_redis_connection("default")
+    if request.method == 'POST':
+        query = request.POST['search_query']
+        courses = []
+        for key in r.scan_iter(match="course:*"):
+            course = r.hgetall(key)
+            course["name"] = course[b"name"].decode()
+            course["description"] = course[b"description"].decode()
+            course["level"] = course[b"level"].decode()
+            course["professor"] = course[b"professor"].decode()
+            course["places"] = course[b"places"].decode()
+            course["students"] = [student.decode() for student in r.lrange(f"registered_student:{course[b'students'].decode()}", 0, -1)]
+            course["remaining_places"] = int(course["places"]) - len(course["students"])
+            if query in course["name"] or query in course["description"] or query in course["level"] or query in course["professor"]:
+                courses.append(course)
+        return render(request, 'search_result.html', {"courses": courses, "search": query})
+    return render(request, 'search_result.html')

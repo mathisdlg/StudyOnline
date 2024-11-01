@@ -15,19 +15,39 @@
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                         <li><a class="dropdown-item" href="{% url 'courses' %}">All courses</a></li>
                     </ul>
-
                 </li>
                 {% is_prof request.COOKIES.username request.COOKIES.user_token as prof %}
                 {% if prof %}
-                    <a class="nav-link" aria-current="page" href="{% url 'create_course' %}">Create a course</a>
+                    <a class="nav-link" href="{% url 'create_course' %}">Create a course</a>
+                {% endif %}
+                {% if request.COOKIES.user_token %}
+                    <a class="nav-link" href="{% url 'subscriptions' %}">Subscriptions</a>
                 {% endif %}
             </ul>
+
+            <form class="d-flex" method="POST" action="{% url 'search' %}">
+                {% csrf_token %}
+                <label for="search_query" class="visually-hidden">Search</label>
+                <input type="text" class="form-control me-2" id="search_query" name="search_query" placeholder="Search">
+
+                <button type="submit" class="btn btn-outline-success">Search</button>
+            </form>
+
             {% if request.COOKIES.user_token %}
-                <a class="btn btn-primary mx-1" aria-current="page" href="{% url 'profile' %}">Profile</a>
-                <a class="btn btn-danger mx-1" aria-current="page" href="{% url 'logout' %}">Logout</a>
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        {% load bootstrap_icons %}
+                        {% bs_icon 'bell' %}
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="notificationsDropdown">
+                        <!-- For future notifications -->
+                    </ul>
+                </div>
+                <a class="btn btn-primary mx-1" href="{% url 'profile' %}">Profile</a>
+                <a class="btn btn-danger mx-1" href="{% url 'logout' %}">Logout</a>
             {% else %}
-                <a class="btn btn-primary mx-1" aria-current="page" href="{% url 'login' %}">Login</a>
-                <a class="btn btn-primary mx-1" aria-current="page" href="{% url 'register' %}">Register</a>
+                <a class="btn btn-primary mx-1" href="{% url 'login' %}">Login</a>
+                <a class="btn btn-primary mx-1" href="{% url 'register' %}">Register</a>
             {% endif %}
         </div>
     </div>
